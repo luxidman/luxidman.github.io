@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUX Idman Yurdu</title>
+<style>
+:root{
+  --bg:#F7F7F5;--surface:#fff;--border:#E4E4E0;
+  --text:#1A1A18;--muted:#7A7A74;
+  --red:#C8102E;--red-lt:#FCEDEF;
+  --green:#2D6A4F;--green-lt:#E8F4EE;
+  --gold:#B08A3E;--gold-lt:#FBF5E6;
+  --warn:#C45C2A;--warn-lt:#FDF0E8;
+  --radius:8px;--gap:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:56px}
+button{cursor:pointer;font-family:inherit}
+a{color:var(--red);text-decoration:none}
+
+header{background:var(--red);color:#fff;padding:12px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.16)}
+header h1{font-size:.98rem;font-weight:700}
+.week-badge{margin-left:auto;font-size:.72rem;background:rgba(255,255,255,.22);padding:3px 10px;border-radius:99px;white-space:nowrap}
+
+main{max-width:700px;margin:0 auto;padding:var(--gap);display:flex;flex-direction:column;gap:var(--gap)}
+
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.tab{padding:11px 4px;border:none;background:transparent;font-size:.82rem;font-weight:500;color:var(--muted);border-right:1px solid var(--border);transition:background .12s,color .12s;text-align:center}
+.tab:last-child{border-right:none}
+.tab.active{background:var(--red);color:#fff;font-weight:700}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card-title{font-size:.63rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+/* Two-col for submit + next match */
+.top-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:start}
+@media(max-width:520px){.top-grid{grid-template-columns:1fr}}
+
+/* Submit form */
+select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);font-size:.9rem;font-family:inherit;background:var(--bg);color:var(--text);appearance:none}
+select:focus{outline:2px solid var(--red);outline-offset:1px}
+
+.day-toggles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:2px}
+.day-btn{padding:9px 2px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);text-align:center;line-height:1.5;transition:all .15s;width:100%}
+.day-btn .dn{font-size:.63rem;text-transform:uppercase;letter-spacing:.06em;display:block;color:var(--muted)}
+.day-btn .dd{font-size:.85rem;font-weight:700;display:block;color:var(--text)}
+.day-btn.active{border-color:var(--red);background:var(--red-lt)}
+.day-btn.active .dn,.day-btn.active .dd{color:var(--red)}
+.day-btn.locked{border-color:var(--green);background:var(--green-lt);cursor:default}
+.day-btn.locked .dn,.day-btn.locked .dd{color:var(--green)}
+
+.toggle-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;user-select:none;transition:border-color .15s,background .15s}
+.toggle-row.on{border-color:var(--gold);background:var(--gold-lt)}
+.tr-icon{font-size:.95rem;flex-shrink:0}
+.tr-main{flex:1}
+.tr-label{font-size:.82rem;font-weight:500}
+.tr-sub{font-size:.68rem;color:var(--muted)}
+.sw{width:32px;height:18px;background:var(--border);border-radius:99px;position:relative;transition:background .15s;flex-shrink:0}
+.sw::after{content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-row.on .sw{background:var(--gold)}
+.toggle-row.on .sw::after{transform:translateX(14px)}
+
+.btn{width:100%;padding:10px;border:none;border-radius:var(--radius);font-size:.88rem;font-weight:600;background:var(--red);color:#fff;transition:opacity .15s}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:not(:disabled):hover{opacity:.85}
+
+.msg{font-size:.78rem;padding:7px 10px;border-radius:6px;display:none}
+.msg.ok{background:var(--green-lt);color:var(--green);display:block}
+.msg.err{background:var(--warn-lt);color:var(--warn);display:block}
+
+/* Next match card */
+.next-match-empty{color:var(--muted);font-size:.8rem;line-height:1.7}
+.nm-legend{font-size:.62rem;font-weight:700;letter-spacing:.07em;color:var(--red);text-transform:uppercase;margin-bottom:4px}
+.nm-day{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.bdg{font-size:.58rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+.bdg-day{background:var(--green);color:#fff}
+.bdg-date{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.bdg-locked{background:var(--red-lt);color:var(--red);border:1px solid #f5b8c2}
+.bdg-result{background:var(--green-lt);color:var(--green);font-size:.72rem}
+.nm-teams{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.nm-team{background:var(--bg);border-radius:var(--radius);padding:8px}
+.nm-team-lbl{font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.nm-player{font-size:.76rem;padding:1px 0}
+.nm-subs{font-size:.72rem;color:var(--muted);margin-top:4px}
+.nm-subs span{font-weight:600}
+
+/* Compact who's in */
+.day-counts{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:7px}
+.dc{text-align:center;padding:5px 2px;border-radius:var(--radius);border:1px solid var(--border)}
+.dc .n{font-size:.95rem;font-weight:700;line-height:1;color:var(--green)}
+.dc.close .n{color:var(--warn)}
+.dc.full .n{color:var(--red)}
+.dc .lbl{font-size:.56rem;color:var(--muted);margin-top:1px}
+.dc .dt{font-size:.56rem;color:var(--muted)}
+.dc .bar{height:2px;background:var(--border);border-radius:99px;margin-top:3px;overflow:hidden}
+.dc .fill{height:100%;background:var(--green);border-radius:99px}
+.dc.full .fill{background:var(--red)}
+.avail-count{font-size:.68rem;color:var(--muted);margin-bottom:6px}
+.avail-total{font-size:.7rem;color:var(--muted);margin-bottom:8px}
+.day-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:480px){.day-cols{grid-template-columns:1fr;gap:6px}}
+.day-col{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.day-col-hdr{padding:8px 10px;background:var(--bg);border-bottom:1px solid var(--border)}
+.day-col-hdr.locked-hdr{background:var(--red-lt);border-bottom-color:#f5b8c2}
+.day-col-title{font-size:.76rem;font-weight:700;color:var(--text)}
+.day-col-date{font-size:.68rem;color:var(--muted);margin-top:1px}
+.day-col-count{font-size:.72rem;font-weight:700}
+.day-col-count.warn{color:var(--warn)}
+.day-col-count.full{color:var(--green)}
+.day-lock-badge{font-size:.62rem;color:var(--red)}
+.day-countdown{font-size:.62rem;color:var(--warn);margin-top:2px}
+.day-col-list{padding:4px 0}
+.day-col-name{font-size:.78rem;padding:4px 10px;display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);line-height:1.3}
+.day-col-name:last-child{border-bottom:none}
+.dbl-badge{font-size:.6rem;background:var(--gold-lt);color:var(--gold);padding:1px 5px;border-radius:99px;font-weight:700;flex-shrink:0}
+.day-col-empty{font-size:.76rem;color:var(--muted);padding:10px;font-style:italic}
+.pip{font-size:.58rem;font-weight:700;padding:1px 4px;border-radius:99px}
+.pip-open{background:var(--green-lt);color:var(--green)}
+.pip-locked{background:var(--red-lt);color:var(--red)}
+.pip-dbl{background:var(--gold-lt);color:var(--gold)}
+
+/* All matches section */
+.match-block{margin-bottom:16px}
+.match-block:last-child{margin-bottom:0}
+.legend{font-size:.63rem;font-weight:700;letter-spacing:.07em;color:var(--red);text-transform:uppercase;margin-bottom:4px}
+.match-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.team{background:var(--bg);border-radius:var(--radius);padding:10px}
+.team-lbl{font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.prow{font-size:.8rem;padding:2px 0;display:flex;align-items:center;gap:4px}
+.tag{font-size:.58rem;padding:1px 4px;border-radius:99px;font-weight:700}
+.tag-dbl{background:var(--gold-lt);color:var(--gold)}
+.tag-str{background:var(--green-lt);color:var(--green)}
+.standby{margin-top:8px;padding:7px 10px;background:var(--bg);border-radius:var(--radius);font-size:.76rem;color:var(--muted)}
+.missed{margin-top:8px;font-size:.76rem;color:var(--muted)}
+.no-match{text-align:center;padding:20px 14px;color:var(--muted);font-size:.83rem}
+.no-match-icon{font-size:1.6rem;margin-bottom:6px}
+.progress-rows{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.progress-row{font-size:.77rem;display:flex;align-items:center;gap:7px}
+.progress-bar{flex:1;height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:var(--green);border-radius:99px}
+.progress-fill.full{background:var(--red)}
+
+
+/* Venue */
+.venue-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.venue-addr{flex:1;font-size:.79rem;color:var(--muted)}
+.dir-btn-sm{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;background:var(--red);color:#fff;border-radius:var(--radius);font-size:.75rem;font-weight:600;white-space:nowrap}
+.dir-btn-sm:hover{opacity:.87}
+
+/* Leaderboard tab */
+.stats-cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:start}
+@media(max-width:500px){.stats-cols{grid-template-columns:1fr}}
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:12px;align-items:end}
+.pod{text-align:center;padding:10px 3px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg)}
+.pod.p1{background:var(--gold-lt);border-color:var(--gold)}
+.pod.p2{background:var(--green-lt);border-color:var(--green)}
+.pod-rank{font-size:1rem;margin-bottom:2px}
+.pod-name{font-size:.71rem;font-weight:700;word-break:break-word}
+.pod-pts{font-size:.9rem;font-weight:700;color:var(--green);margin-top:2px}
+.pod-pts.gold{color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th{text-align:left;font-size:.57rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:0 3px 6px;border-bottom:1px solid var(--border)}
+td{padding:5px 3px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.rc{font-weight:700;color:var(--muted);font-size:.72rem}
+.pc{font-weight:700;color:var(--green)}
+.pts-key{font-size:.68rem;color:var(--muted);line-height:1.8;margin-top:9px}
+.sch-section-lbl{font-size:.61rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.sch-match{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;background:var(--surface)}
+.sch-match:last-child{margin-bottom:0}
+.sch-legend{font-size:.61rem;font-weight:700;letter-spacing:.06em;color:var(--red);text-transform:uppercase;margin-bottom:3px}
+.sch-day-row{display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap}
+.sch-score{font-size:.95rem;font-weight:700}
+.sch-outcome{font-size:.68rem;color:var(--muted);margin-left:4px}
+.sch-teams{font-size:.73rem;color:var(--muted);line-height:1.6}
+.sch-wk-lbl{font-size:.67rem;color:var(--muted);margin:9px 0 4px;font-weight:600}
+.divider{height:1px;background:var(--border);margin:12px 0}
+
+.loader{text-align:center;padding:24px;color:var(--muted);font-size:.82rem}
+.spinner{width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.25rem">⚽</span>
+  <h1>LUX Idman Yurdu</h1>
+  <span class="week-badge" id="hdr-week">—</span>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('play')">This Week</button>
+    <button class="tab" onclick="switchTab('stats')">Leaderboard</button>
+  </div>
+
+  <!-- THIS WEEK TAB -->
+  <div id="tab-play">
+    <div style="display:flex;flex-direction:column;gap:var(--gap)">
+
+      <!-- Submit + Next Match side by side -->
+      <div class="top-grid">
+
+        <div class="card">
+          <div class="card-title">Your availability</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <select id="player-select" onchange="saveName()"><option value="">Select your name…</option></select>
+            <div>
+              <div style="font-size:.71rem;color:var(--muted);margin-bottom:6px">Which days can you play?</div>
+              <div class="day-toggles">
+                <button class="day-btn" id="btn-Tue" onclick="toggleDay('Tue')">
+                  <span class="dn">Tue</span><span class="dd" id="date-Tue">—</span>
+                </button>
+                <button class="day-btn" id="btn-Wed" onclick="toggleDay('Wed')">
+                  <span class="dn">Wed</span><span class="dd" id="date-Wed">—</span>
+                </button>
+                <button class="day-btn" id="btn-Thu" onclick="toggleDay('Thu')">
+                  <span class="dn">Thu</span><span class="dd" id="date-Thu">—</span>
+                </button>
+              </div>
+            </div>
+            <div class="toggle-row" id="double-row" onclick="toggleDouble()">
+              <span class="tr-icon">🌟</span>
+              <div class="tr-main">
+                <div class="tr-label">I can play two days</div>
+                <div class="tr-sub">Only used to unlock an extra match</div>
+              </div>
+              <div class="sw"></div>
+            </div>
+            <button class="btn" id="submit-btn" onclick="submitAvail()">Submit</button>
+            <div class="msg" id="submit-msg"></div>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScVAxGN1UZ0nGDYmLWWryDFk-FdjbgZ9DI8kzsqLUNB_Y6wug/viewform" target="_blank" style="font-size:.74rem;color:var(--muted);text-align:center;display:block;margin-top:2px">Not registered? Fill the form →</a>
+          </div>
+        </div>
+
+        <!-- Next match -->
+        <div class="card">
+          <div class="card-title">Next match</div>
+          <div id="next-match-content"><div class="loader"><div class="spinner"></div>Loading…</div></div>
+        </div>
+
+      </div>
+
+      <!-- Who's in — full width, horizontal chips -->
+      <div class="card">
+        <div class="card-title">Who's in this week</div>
+        <div id="avail-content"><div class="loader"><div class="spinner"></div>Loading…</div></div>
+      </div>
+
+      <!-- All squads -->
+      <div class="card">
+        <div class="card-title">This week's squads</div>
+        <div id="matches-content"><div class="loader"><div class="spinner"></div>Loading…</div></div>
+      </div>
+
+
+      <!-- Venue -->
+      <div class="card">
+        <div class="venue-strip">
+          <span class="venue-addr">📍 Sport4Lux · 4 Rue de Bouillon, Luxembourg</span>
+          <a class="dir-btn-sm" href="https://maps.google.com/?q=Sport4Lux+Luxembourg+4+Rue+de+Bouillon" target="_blank">🗺 Directions</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LEADERBOARD TAB -->
+  <div id="tab-stats" style="display:none">
+    <div class="stats-cols">
+      <div class="card">
+        <div class="card-title">🏆 Leaderboard</div>
+        <div id="lb-content"><div class="loader"><div class="spinner"></div>Loading…</div></div>
+        <div class="pts-key">Win +3 · Draw +1 · Loss +0<br>Played +1 · Two days +1</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Scores</div>
+        <div id="sch-content"><div class="loader"><div class="spinner"></div>Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+var API_URL = 'https://script.google.com/macros/s/AKfycbxcHRBDoQ-5xwnsSv2w0bDgAGB_A2deVnVX9t8vtSRkBIfJ2Y2sfb2SQR5E4I1YWklWVQ/exec';
+
+var state      = null;
+var selDays    = {Tue:false,Wed:false,Thu:false};
+var dbl        = false;
+var frozenDays = {};
+var weekDates  = {Tue:'—',Wed:'—',Thu:'—'};
+
+var DAY_FULL = {Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday'};
+
+window.addEventListener('DOMContentLoaded', fetchState);
+
+function fetchState(cb) {
+  fetch(API_URL)
+    .then(function(r){return r.json();})
+    .then(function(d){state=d;applyState();if(typeof cb==='function')cb();})
+    .catch(function(){showMsg('submit-msg','Cannot reach server.',true);});
+}
+
+function applyState() {
+  if (!state) return;
+  var wd = state.weekDates||{};
+  weekDates = wd;
+  document.getElementById('hdr-week').textContent = wd.Tue ? 'w/c '+wd.Tue : state.week||'—';
+
+  ['Tue','Wed','Thu'].forEach(function(d){
+    var el=document.getElementById('date-'+d);
+    if(el) el.textContent=wd[d]||'—';
+  });
+
+  frozenDays = state.frozenDays||{};
+  ['Tue','Wed','Thu'].forEach(function(d){
+    var btn=document.getElementById('btn-'+d);if(!btn)return;
+    btn.classList.toggle('locked',!!frozenDays[d]);
+    btn.classList.toggle('active',selDays[d]&&!frozenDays[d]);
+  });
+
+  var saved='';
+  try{saved=localStorage.getItem('lux_player_name')||'';}catch(e){}
+  var sel=document.getElementById('player-select');
+  var cur=sel.value||saved;
+  sel.innerHTML='<option value="">Select your name…</option>';
+  (state.players||[]).forEach(function(p){
+    var o=document.createElement('option');
+    o.value=p.name;o.textContent=p.name;
+    if(p.name===cur)o.selected=true;
+    sel.appendChild(o);
+  });
+
+  renderNextMatch();
+  renderAvail();
+  renderMatches();
+  renderLeaderboard();
+  renderScores();
+}
+
+function switchTab(name){
+  ['play','stats'].forEach(function(n,i){
+    document.querySelectorAll('.tab')[i].classList.toggle('active',n===name);
+    document.getElementById('tab-'+n).style.display=n===name?'block':'none';
+  });
+}
+
+function saveName(){
+  var name=document.getElementById('player-select').value;
+  try{if(name)localStorage.setItem('lux_player_name',name);}catch(e){}
+}
+
+/* ── Next Match ────────────────────────────────── */
+function renderNextMatch(){
+  var el=document.getElementById('next-match-content');
+  if(!state){el.innerHTML=loader_();return;}
+  var asgn=state.assignments;
+  var wd=state.weekDates||{};
+
+  if(!asgn||!asgn.matches||!asgn.matches.length){
+    // Show progress toward first match
+    var avail=state.availability||[];
+    var cnt={Tue:0,Wed:0,Thu:0};
+    avail.forEach(function(p){['Tue','Wed','Thu'].forEach(function(d){if(p.days[d])cnt[d]++;});});
+    var best=DAYS.reduce(function(a,d){return cnt[d]>cnt[a]?d:a;},'Tue');
+    var n=cnt[best],gap=10-n;
+    el.innerHTML='<div class="next-match-empty">'+
+      (n===0?'No one submitted yet.':
+       gap>0?best+' '+wd[best]+': <strong>'+n+'/10</strong> — '+gap+' more needed':
+       'Solving…')+'</div>';
+    return;
+  }
+
+  // Show the first upcoming match (first in sorted order).
+  var m=asgn.matches[0];
+  var strongMap={};
+  (state.players||[]).forEach(function(p){strongMap[p.name]=p.strong;});
+  var doublers=(m.meta||[]).filter(function(x){return x.isDouble;}).map(function(x){return x.name;});
+  var locked=frozenDays[m.day];
+  var sb=(asgn.standby||{})[m.day]||[];
+
+  var html='';
+  if(m.legendName)html+='<div class="nm-legend">'+esc(m.legendName)+'</div>';
+  html+='<div class="nm-day">'+
+    '<span class="bdg bdg-day">'+DAY_FULL[m.day]+'</span>'+
+    '<span class="bdg bdg-date">'+(wd[m.day]||'')+'</span>'+
+    (locked?'<span class="bdg bdg-locked">🔒</span>':'')+
+    (m.result?'<span class="bdg bdg-result">'+m.result.scoreA+' — '+m.result.scoreB+'</span>':'')+
+    '</div>';
+  html+='<div class="nm-teams">';
+  ['A','B'].forEach(function(t){
+    html+='<div class="nm-team"><div class="nm-team-lbl">Team '+t+'</div>';
+    (m.teams[t]||[]).forEach(function(n){
+      html+='<div class="nm-player">'+esc(n)+
+        (doublers.indexOf(n)>=0?' <span style="font-size:.58rem;color:var(--gold)">×2</span>':'')+
+        (strongMap[n]?' <span style="font-size:.58rem;color:var(--green)">💪</span>':'')+
+        '</div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  var sbShow=sb.slice(0,2);
+  if(sbShow.length) html+='<div class="nm-subs"><span>Subs:</span> '+sbShow.map(esc).join(', ')+(sb.length>2?' +'+( sb.length-2)+' more':'')+'</div>';
+  el.innerHTML=html;
+}
+
+/* ── Who's In ──────────────────────────────────── */
+function renderAvail(){
+  var el=document.getElementById('avail-content');
+  if(!state){el.innerHTML=loader_();return;}
+  var avail=state.availability||[];
+  var wd=state.weekDates||{};
+  if(!avail.length){el.innerHTML='<p style="color:var(--muted);font-size:.78rem">No one submitted yet.</p>';return;}
+
+  var total=avail.length;
+  var html='<div class="avail-total">'+total+' of '+(state.players||[]).length+' submitted</div>';
+  html+='<div class="day-cols">';
+
+  ['Tue','Wed','Thu'].forEach(function(d){
+    var inDay=avail.filter(function(p){return p.days[d];});
+    var n=inDay.length;
+    var locked=frozenDays[d];
+    var cntCls=locked?'full':n>=10?'full':n>=8?'warn':'';
+    var cntLabel=n+'/10';
+
+    // Countdown to lock: match at 20:00 on match day, freeze 28h before
+    var countdown='';
+    var isoKey=d+'_iso';
+    if(!locked&&wd[isoKey]){
+      var matchMs=new Date(wd[isoKey]+'T20:00:00').getTime();
+      var freezeMs=matchMs-(28*3600*1000);
+      var diffMs=freezeMs-Date.now();
+      if(diffMs>0){
+        var diffH=Math.floor(diffMs/3600000);
+        var diffM=Math.floor((diffMs%3600000)/60000);
+        countdown=diffH>0?'locks in '+diffH+'h':'locks in '+diffM+'m';
+      }
+    }
+
+    html+='<div class="day-col">';
+    html+='<div class="day-col-hdr'+(locked?' locked-hdr':'')+'">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between">'+
+        '<div class="day-col-title">'+d+(locked?' <span class="day-lock-badge">🔒</span>':'')+'</div>'+
+        '<div class="day-col-count '+cntCls+'">'+cntLabel+'</div>'+
+      '</div>'+
+      '<div class="day-col-date">'+(wd[d]||'—')+'</div>'+
+      (countdown?'<div class="day-countdown">⏱ '+countdown+'</div>':'')+
+      '</div>';
+    html+='<div class="day-col-list">';
+    if(!inDay.length){
+      html+='<div class="day-col-empty">No one yet</div>';
+    } else {
+      inDay.forEach(function(p){
+        html+='<div class="day-col-name">'+esc(p.name)+
+          (p.double?'<span class="dbl-badge">×2</span>':'')+
+          '</div>';
+      });
+    }
+    html+='</div></div>';
+  });
+
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+/* ── All Squads ────────────────────────────────── */
+function renderMatches(){
+  var el=document.getElementById('matches-content');
+  if(!state){el.innerHTML=loader_();return;}
+  var asgn=state.assignments;
+  var avail=state.availability||[];
+  var wd=state.weekDates||{};
+  var cnt={Tue:0,Wed:0,Thu:0};
+  avail.forEach(function(p){['Tue','Wed','Thu'].forEach(function(d){if(p.days[d])cnt[d]++;});});
+
+  if(!asgn||!asgn.matches||!asgn.matches.length){
+    var pRows='<div class="progress-rows">';
+    ['Tue','Wed','Thu'].forEach(function(d){
+      var n=cnt[d],pct=Math.min(100,Math.round(n/10*100));
+      pRows+='<div class="progress-row">'+
+        '<span style="width:82px;font-size:.75rem">'+d+(wd[d]?' '+wd[d]:'')+'</span>'+
+        '<div class="progress-bar"><div class="progress-fill'+(n>=10?' full':'')+'" style="width:'+pct+'%"></div></div>'+
+        '<span style="width:32px;text-align:right;font-size:.74rem;color:var(--muted)">'+n+'/10</span></div>';
+    });
+    el.innerHTML='<div class="no-match"><div class="no-match-icon">🕐</div>Squads form once a day hits 10.'+pRows+'</div>';
+    return;
+  }
+
+  var strongMap={};
+  (state.players||[]).forEach(function(p){strongMap[p.name]=p.strong;});
+  var html='';
+  asgn.matches.forEach(function(m,mi){
+    var doublers=(m.meta||[]).filter(function(x){return x.isDouble;}).map(function(x){return x.name;});
+    var res=m.result,locked=frozenDays[m.day];
+    if(mi>0)html+='<div class="divider"></div>';
+    html+='<div class="match-block">';
+    if(m.legendName)html+='<div class="legend">'+esc(m.legendName)+'</div>';
+    html+='<div class="match-hdr">'+
+      '<span class="bdg bdg-day">'+DAY_FULL[m.day]+'</span>'+
+      '<span class="bdg bdg-date">'+(wd[m.day]||'')+'</span>'+
+      (locked?'<span class="bdg bdg-locked">🔒 Locked</span>':'')+
+      (res?'<span class="bdg bdg-result">'+res.scoreA+' — '+res.scoreB+'</span>':'')+
+      '</div>';
+    html+='<div class="teams">';
+    ['A','B'].forEach(function(t){
+      html+='<div class="team"><div class="team-lbl">Team '+t+'</div>';
+      (m.teams[t]||[]).forEach(function(n){
+        html+='<div class="prow">'+esc(n);
+        if(doublers.indexOf(n)>=0)html+=' <span class="tag tag-dbl">×2</span>';
+        if(strongMap[n])html+=' <span class="tag tag-str">💪</span>';
+        html+='</div>';
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+    var sb=(asgn.standby||{})[m.day]||[];
+    var sbShow=sb.slice(0,2);
+    if(sbShow.length)html+='<div class="standby"><strong>Subs:</strong> '+sbShow.map(esc).join(', ')+(sb.length>2?' +'+( sb.length-2)+' more':'')+'</div>';
+    html+='</div>';
+  });
+
+  var benched=asgn.benched||[];
+  if(benched.length)html+='<div class="missed">Benched: '+benched.map(esc).join(', ')+'.</div>';
+  el.innerHTML=html;
+}
+
+
+/* ── Day toggles ───────────────────────────────── */
+function toggleDay(d){
+  if(frozenDays[d])return;
+  selDays[d]=!selDays[d];
+  document.getElementById('btn-'+d).classList.toggle('active',selDays[d]);
+}
+function toggleDouble(){
+  dbl=!dbl;
+  document.getElementById('double-row').classList.toggle('on',dbl);
+}
+
+/* ── Submit ────────────────────────────────────── */
+function submitAvail(){
+  var name=document.getElementById('player-select').value;
+  if(!name){showMsg('submit-msg','Select your name.',true);return;}
+  if(!selDays.Tue&&!selDays.Wed&&!selDays.Thu){showMsg('submit-msg','Pick at least one day.',true);return;}
+  var btn=document.getElementById('submit-btn');
+  btn.disabled=true;btn.textContent='Submitting…';
+  apiCall({action:'submit',name:name,days:selDays,double:dbl})
+    .then(function(r){
+      if(r.error)showMsg('submit-msg',r.error,true);
+      else{showMsg('submit-msg','Done, '+name+'! ⚽',false);fetchState();}
+    })
+    .finally(function(){btn.disabled=false;btn.textContent='Submit';});
+}
+
+/* ── Leaderboard ───────────────────────────────── */
+function renderLeaderboard(){
+  var el=document.getElementById('lb-content');
+  var board=state&&state.leaderboard?state.leaderboard:[];
+  if(!board.length){el.innerHTML='<p style="color:var(--muted);font-size:.78rem">No results yet.</p>';return;}
+  var medals=['🥇','🥈','🥉'];
+  var pod='<div class="podium">';
+  [1,0,2].forEach(function(r){
+    var p=board[r];if(!p){pod+='<div></div>';return;}
+    pod+='<div class="pod '+(r===0?'p1':r===1?'p2':'p3')+'">'+
+      '<div class="pod-rank">'+medals[r]+'</div>'+
+      '<div class="pod-name">'+esc(p.name)+'</div>'+
+      '<div class="pod-pts'+(r===0?' gold':'')+'">'+p.pts+'</div></div>';
+  });
+  pod+='</div>';
+  var tbl='<table><thead><tr><th>#</th><th>Name</th><th>Pts</th><th>W</th><th>D</th><th>P</th></tr></thead><tbody>';
+  board.forEach(function(p,i){
+    tbl+='<tr><td class="rc">'+(i+1)+'</td><td>'+esc(p.name)+'</td>'+
+      '<td class="pc">'+p.pts+'</td><td>'+p.wins+'</td><td>'+p.draws+'</td><td>'+p.played+'</td></tr>';
+  });
+  el.innerHTML=pod+tbl+'</tbody></table>';
+}
+
+/* ── Scores / History ──────────────────────────── */
+function renderScores(){
+  var el=document.getElementById('sch-content');
+  if(!state){el.innerHTML=loader_();return;}
+  var wd=state.weekDates||{};
+  var html='';
+  var asgn=state.assignments;
+  if(asgn&&asgn.matches&&asgn.matches.length){
+    html+='<div class="sch-section-lbl">This week</div>';
+    asgn.matches.forEach(function(m){
+      html+='<div class="sch-match">';
+      if(m.legendName)html+='<div class="sch-legend">'+esc(m.legendName)+'</div>';
+      html+='<div class="sch-day-row">'+
+        '<span class="bdg bdg-day" style="font-size:.56rem">'+DAY_FULL[m.day]+'</span>'+
+        '<span class="bdg bdg-date" style="font-size:.56rem">'+(wd[m.day]||'')+'</span>'+
+        (m.result?'<span class="bdg bdg-result" style="font-size:.66rem">'+m.result.scoreA+' — '+m.result.scoreB+'</span>':
+          '<span style="font-size:.66rem;color:var(--muted);margin-left:auto">Pending</span>')+
+        '</div>';
+      html+='<div class="sch-teams">🟢 '+(m.teams.A||[]).join(', ')+'<br>🔵 '+(m.teams.B||[]).join(', ')+'</div></div>';
+    });
+  }
+  var hist=state.history||[];
+  if(hist.length){
+    if(html)html+='<div style="height:8px"></div>';
+    html+='<div class="sch-section-lbl">Past</div>';
+    hist.forEach(function(week){
+      html+='<div class="sch-wk-lbl">'+esc(week.week)+'</div>';
+      week.matches.forEach(function(m){
+        var parts=(m.score||'').split('-');
+        var sA=Number(parts[0]||0),sB=Number(parts[1]||0);
+        var out=sA>sB?'A won':sB>sA?'B won':'Draw';
+        html+='<div class="sch-match">';
+        if(m.legendName)html+='<div class="sch-legend">'+esc(m.legendName)+'</div>';
+        html+='<div class="sch-score">'+sA+' — '+sB+'<span class="sch-outcome">'+out+'</span></div>';
+        html+='<div class="sch-teams">🟢 '+(m.teamsA||[]).join(', ')+'<br>🔵 '+(m.teamsB||[]).join(', ')+'</div></div>';
+      });
+    });
+  }
+  if(!html)html='<p style="color:var(--muted);font-size:.78rem">No matches yet.</p>';
+  el.innerHTML=html;
+}
+
+/* ── Helpers ───────────────────────────────────── */
+var DAYS=['Tue','Wed','Thu'];
+
+function apiCall(body){
+  var url=API_URL+'?data='+encodeURIComponent(JSON.stringify(body));
+  return fetch(url).then(function(r){return r.json();});
+}
+function showMsg(id,text,err){
+  var el=document.getElementById(id);if(!el)return;
+  el.textContent=text;el.className='msg '+(err?'err':'ok');
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function loader_(){return'<div class="loader"><div class="spinner"></div>Loading…</div>';}
+</script>
+</body>
+</html>
